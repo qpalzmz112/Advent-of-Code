@@ -1,7 +1,9 @@
 import os
+import pathlib
 import re
 
-os.chdir("C:\\Users\\seanc\\source\\repos\\Advent-of-Code\\2024\\Day 13")
+path = pathlib.Path(__file__).parent.resolve()
+os.chdir(path)
 
 txt = open("input.txt", "r")
 txt = txt.read()

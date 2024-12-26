@@ -1,31 +1,13 @@
 import os
+import pathlib
+import copy
+from collections import deque
 
-os.chdir("C:\\Users\\seanc\\source\\repos\\Advent-of-Code\\2024\\Day 15")
+path = pathlib.Path(__file__).parent.resolve()
+os.chdir(path)
 
 txt = open("input.txt", "r")
 txt = txt.read()
-
-txt = """##########
-#..O..O.O#
-#......O.#
-#.OO..O.O#
-#..O@..O.#
-#O#..O...#
-#O..O..O.#
-#.OO.O.OO#
-#....O...#
-##########
-
-<vv>^<v^>v>^vv^v>v<>v^v<v<^vv<<<^><<><>>v<vvv<>^v^>^<<<><<v<<<v^vv^v>^
-vvv<<^>^v^^><<>>><>^<<><^vv^^<>vvv<>><^^v>^>vv<>v<<<<v<^v>^<^^>>>^<v<v
-><>vv>v^v^<>><>>>><^^>vv>v<^^^>>v^v^<^^>v^^>v^<^v>v<>>v^v^<v>v^^<^^vv<
-<<v<^>>^^^^>>>v^<>vvv^><v<<<>^^^vv^<vvv>^>v<^^^^v<>^>vvvv><>>v^<<^^^^^
-^><^><>>><>^^<<^^v>>><^<v>^<vv>>v>>>^v><>^v><<<<v>>v<v<v>vvv>^<><<>^><
-^>><>^v<><^vvv<^^<><v<<<<<><^v<<<><<<^^<v<^^^><^>>^<v^><<<^>>^v<v^v<v^
->^>>^v>vv>^<<^v<>><<><<v<<v><>v<^vv<<<>^^v^>^^>>><<^v>>v^v><^^>>^<>vv^
-<><^^>^^^<><vvvvv^v<v<<>^v<v>v<<^><<><<><<<^^<<<^<<>><<><^^^>^^<>^>v<>
-^^>vv<^v^v<vv>^<><v<^v>^^^>>>^^vvv^>vvv<>>>^<^>>>>>^<<^v>^vvv<>^<><<v>
-v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^"""
 
 def parse(s):
     res = []
@@ -60,32 +42,60 @@ def can_move_box(x, y, dx, dy):
             y_offset = 1
         else:
             y_offset = -1
-        return warehouse[x + dx][y + dy] != '#' and warehouse[x + dx][y + dy + y_offset] != '#'
+        return warehouse[x + dx][y] != '#' and warehouse[x + dx][y + y_offset] != '#'
 
     # moving horizontally
     else:
-        return warehouse[x][y + 2 * dy] != '#'
+        if warehouse[x][y] == '[':
+            y_offset = 2 if dy == 1 else -1
+        else:
+            y_offset = 1 if dy == 1 else -2
+        return warehouse[x][y + y_offset] != '#'
 
-def bfs_boxes(x, y, dx, dy):
-    # return a list of indices where there is a half of a box
+def move_boxes(x, y, dx, dy):
+    # try to move a contiguous set of boxes one space in the given direction, returning True if the move was possible
     # {'[': {set of indices where the half will move if a move is possible}, ']': {set of indices...}}
     # mark boxes' spaces as free while building the above dict - if we end up not doing the move, backtrack
     # if we stop finding more boxes to move without any being unable to, go through the dict and do the obvious thing
+    indices = {'[': set(), ']': set()}
+    todo = deque()
+    todo.append((x, y))
+
+    while todo:
+        row, col = todo.pop()
+        char = warehouse[row][col]
+        if char not in indices:
+            continue
+        if not can_move_box(row, col, dx, dy):
+            return False
+
+        indices[char].add((row + dx, col + dy))
+        warehouse[row][col] = '.'
+        if char == '[':
+            todo.append((row, col + 1))
+        else:
+            todo.append((row, col - 1))
+        todo.append((row + dx, col + dy))
+    
+    # haven't returned False, so we can move the boxes
+    for c in indices:
+        for row, col in indices[c]:
+            warehouse[row][col] = c
+    return True    
 
 def move(x, y, dx, dy):
+    global warehouse
+    # return robot's new position if it moves
     if warehouse[x + dx][y + dy] == '#':
         return
-    elif warehouse[x + dx][y + dy] == 'O':
-        tmpx = x + dx
-        tmpy = y + dy
-        while warehouse[tmpx][tmpy] != '#':
-            if warehouse[tmpx][tmpy] == '.':
-                warehouse[tmpx][tmpy] = 'O'
-                warehouse[x + dx][y + dy] = '@'
-                warehouse[x][y] = '.'
-                return (x + dx, y + dy)                
-            tmpx += dx
-            tmpy += dy
+    elif warehouse[x + dx][y + dy] in {'[', ']'}:
+        prev_warehouse = copy.deepcopy(warehouse)
+        if move_boxes(x + dx, y + dy, dx, dy):
+            warehouse[x][y] = '.'
+            warehouse[x + dx][y + dy] = '@'
+            return (x + dx, y + dy)
+        else:
+            warehouse = prev_warehouse
     else:
         warehouse[x + dx][y + dy] = '@'
         warehouse[x][y] = '.'
@@ -111,8 +121,7 @@ def solution():
         dx, dy = moves[m]
         tmp = move(x, y, dx, dy)
         if tmp is not None:
-            x, y = tmp
-        
+            x, y = tmp        
     print(calculate_answer())
 
 solution()

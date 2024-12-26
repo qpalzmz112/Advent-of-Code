@@ -16,12 +16,8 @@ year = 2024
 os.chdir(f"{basePath}\\{year}")
 
 for day in days:
-    boilerplate = f"""import os
-
-os.chdir(f"{basePath}\\\\{year}\\\\Day {day}")
-
-txt = open("input.txt", "r")
-txt = txt.read()"""
+    boilerplate = f"""import os\nimport pathlib\n\npath = pathlib.Path(__file__).parent.resolve()
+os.chdir(path)\n\ntxt = open("input.txt", "r")\ntxt = txt.read()"""
 
     os.mkdir(f"Day {day}")
 
