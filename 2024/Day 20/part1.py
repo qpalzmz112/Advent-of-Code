@@ -24,42 +24,39 @@ def find_char(c):
 def in_bounds(pos):
     return pos[0] >= 0 and pos[0] < len(orig_txt) and pos[1] >= 0 and pos[1] < len(orig_txt[0])
 
-def solve(start, curr_dir, picoseconds, canCheat):
+def solve():
     dirs = {(-1, 0), (0, 1), (1, 0), (0, -1)}
-    cheats = {}
-    
-    todo = deque()
-    todo.append((start, curr_dir, picoseconds, canCheat))
+    cheats = defaultdict(list)
+    start = find_char('S')
 
+    todo = deque()
+    todo.append((start, 0))
     while todo:
-        pos, curr_dir, picoseconds, canCheat = todo.pop()
+        pos, picoseconds = todo.pop()
+        if pos in cheats:
+            cheats[pos] = list(map(lambda x: picoseconds - x, cheats[pos]))
 
         if txt[pos] == 'E':
-            if canCheat:
-                return picoseconds, cheats
-            else:
-                return picoseconds
+            return picoseconds, cheats
+        txt[pos] = 'O'
+        
 
         for d in dirs:
-            if d == (curr_dir[0] * -1, curr_dir[1] * -1):
-                continue
-
             newPos = (pos[0] + d[0], pos[1] + d[1])
-            if txt[newPos] != '#':
-                todo.append((newPos, d, picoseconds + 1, canCheat))
+            if txt[newPos] in ('.', 'E'):
+                todo.append((newPos, picoseconds + 1))
 
-            elif canCheat:
-               cheatStart = (newPos[0] + d[0], newPos[1] + d[1])
-               if in_bounds(cheatStart) and txt[cheatStart] != '#':
-                   cheats[(newPos, cheatStart)] = solve(cheatStart, d, picoseconds + 2, False)
+            cheatEnd = (newPos[0] + d[0], newPos[1] + d[1])
+            if txt[newPos] == '#' and in_bounds(cheatEnd) and txt[cheatEnd] in ('.', 'E'):
+                cheats[cheatEnd].append(picoseconds + 2)
+                # cheat is on tiles newPos, cheatEnd
 
 def solution():
-    orig_time, cheats = solve(find_char('S'), (-1, 0), 0, True)
-    return sum(1 if orig_time - cheats[key] >= 100 else 0 for key in cheats)
+    orig_time, cheats = solve()
+    return sum(1 if num >= 100 else 0 for val in cheats.values() for num in val)
     
-
 print(solution())
 
 # change solution to go through maze once, making a note of each position we can cheat to (position: score at time of adding)
-# then, for each position we are at, if it's a key in the above dictionary, update its value to (current score - score at time of adding + 2), i.e.,
+# then, for each position we are at, if it's a key in the above dictionary, update its value to (current score - score at time of adding - 2), i.e.,
 # the number of steps the cheat saves
