@@ -42,40 +42,44 @@ def get_paths(keypad):
 numpad_moves = get_paths(numpad)
 dirpad_moves = get_paths(dirpad)
 
-def enter_code(code):
+def split_code(code):
+    pieces = []
+    curr = "A"
+    for c in code:
+        curr += c
+        if c == 'A':
+            pieces.append(curr)
+            curr = "A"
+    return pieces
+
+def enter_code(code, depth, cache):
+    if depth == 0:
+        return len(code) - 1
+    if (code, depth) in cache:
+        return cache[(code, depth)]
+    
     moves = ""
-    i, j = -1, 0
+    i, j = 0, 1
     use_numpad = code[1] in numpad_moves
-    while j + 1 < len(code):
-        i += 1
-        j += 1
+    while j < len(code):        
         if code[j] == code[i]:
             moves += 'A'
         elif use_numpad:
             moves += numpad_moves[code[i]][code[j]]
         else:
             moves += dirpad_moves[code[i]][code[j]]
-    return moves
+        i += 1
+        j += 1
+
+    cache[(code, depth)] = sum(enter_code(piece, depth - 1, cache) for piece in split_code(moves))
+    return cache[(code, depth)]
 
 def solution():  
     res = 0
     for c in codes:
-        print(c)
         num = int(c[:len(c) - 1])   
-        
-        for i in range(26):
-            print(i)
-            j = 0
-            new_c = ""
-            while j < len(c):
-                if c[j] == 'A':
-                    new_c += enter_code('A' + c[:j + 1])
-                    c = c[j + 1:]
-                    j = 0
-                else:
-                   j += 1
-            c = new_c
-        length =  len(c)
+        cache = {}
+        length = enter_code('A' + c, 26, cache)
         res += length * num
     return res
 
