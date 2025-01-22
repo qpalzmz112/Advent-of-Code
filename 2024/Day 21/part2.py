@@ -76,9 +76,9 @@ def enter_code(code, depth, cache):
 
 def solution():  
     res = 0
+    cache = {}
     for c in codes:
-        num = int(c[:len(c) - 1])   
-        cache = {}
+        num = int(c[:len(c) - 1])        
         length = enter_code('A' + c, 26, cache)
         res += length * num
     return res
